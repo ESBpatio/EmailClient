@@ -22,7 +22,7 @@ namespace EmailClient
         private readonly IMessageFactory messageFactory;
         private string uri, login, password, classId, type;
         private bool ssl;
-        private int port, timeout;
+        private int port, timeout, startLine, sheetNumber;
         public IExcelDataReader reader;
 
         public IngoingConnectionPoint(string jsonSettings, IServiceLocator serviceLocator)
@@ -118,16 +118,6 @@ namespace EmailClient
                                     var part = (MimePart)attachment;
                                     part.Content.DecodeTo(stream);
                                 }
-                                reader = ExcelReaderFactory.CreateReader(stream);
-                                var conf = new ExcelDataSetConfiguration
-                                {
-                                    ConfigureDataTable = _ => new ExcelDataTableConfiguration
-                                    {
-                                        UseHeaderRow = true
-                                    }
-                                };                               
-                                DataSet dataSet = reader.AsDataSet(conf);
-                                DataTable dataTable = dataSet.Tables[0];
 
                                 FileStream openSettings = File.Open(@"C:\excel\Settings\" + from, FileMode.Open, FileAccess.Read);
                                 StreamReader sr = new StreamReader(openSettings);
@@ -136,9 +126,30 @@ namespace EmailClient
                                 List<rowSetting> rowSettings = GetSettingsToRows(settingToProvider);
 
                                 if (rowSettings.Count < 0)
-                                    logger.Warning("Настройки не найдены");
+                                {
+                                    logger.Warning(string.Format("Настройки не найдены для отправителя {0} , тема письма : {1}", from , subject));
+                                    inbox.AddFlags(i, MessageFlags.Seen, true);
+                                //  sr.Close();
+                                    continue;
+                                }    
+                                //sr.Close();
 
-                                sr.Close();
+                                startLine = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НачальнаяСтрокаВФайле") - 1);
+                                sheetNumber = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НомерЛистаВФайле") - 1);
+
+                                reader = ExcelReaderFactory.CreateReader(stream);
+                                var conf = new ExcelDataSetConfiguration
+                                {
+                                    ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                                    {
+                                        //UseHeaderRow = true
+                                        UseHeaderRow = false,
+                                        FilterRow = rowReader => rowReader.Depth > startLine
+                                    }
+                                };
+                                DataSet dataSet = reader.AsDataSet(conf);
+                                DataTable dataTable = dataSet.Tables[sheetNumber];
+
                                 DataTable dt = new DataTable();
                                 foreach (var item in rowSettings)
                                 {
