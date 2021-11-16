@@ -18,7 +18,7 @@ namespace EmailClient
     class OutgoingConnectionPoint : IStandartOutgoingConnectionPoint
     {
         private readonly ILogger logger;
-        private  bool debugMode;
+        private bool debugMode;
         private readonly string urlPatch;
         private int timeOut;
         private string patchFile;
@@ -31,7 +31,7 @@ namespace EmailClient
         public OutgoingConnectionPoint(string jsonSettings, IServiceLocator serviceLocator)
         {
 
-            logger = new Logger(serviceLocator.GetLogger(GetType()),debugMode,"REST клиент");
+            logger = new Logger(serviceLocator.GetLogger(GetType()), debugMode, "REST клиент");
             urlPatch = @"https://drive.google.com/uc?export=download&id=";
             ParseSettings(jsonSettings);
         }
@@ -48,11 +48,11 @@ namespace EmailClient
                 {
                     logger.Error(string.Format("Ошибка получения сообщения из очереди id : {0}. Описание ошибки : {1}", message.Id, ex.Message));
                 }
-                if(!(message == null))
+                if (!(message == null))
                 {
-                    if(message.Type == "GDRV")
+                    try
                     {
-                        try
+                        if (message.Type == "GDRV")
                         {
                             byte[] body = Encoding.UTF8.GetBytes(ExcelToJSON(DowloadDocument(message, messageSource, logger)));
                             Message replyMessage = new Message()
@@ -62,21 +62,41 @@ namespace EmailClient
                                 Id = Guid.NewGuid(),
                                 Type = "DTP"
                             };
-                            if(!replyHandler.HandleReplyMessage(replyMessage))
+                            if (!replyHandler.HandleReplyMessage(replyMessage))
                             {
                                 //logger.Error("Ошибка отправки ответного сообщения");
                                 CompletePeeklock(logger, messageSource, message.Id, MessageHandlingError.UnknowError, "Ошибка отправки ответного сообщения");
                             }
                             CompletePeeklock(logger, messageSource, message.Id);
                         }
-                        catch (Exception ex)
+
+                        else if (message.Type == "STG")
                         {
-                            CompletePeeklock(logger, messageSource, message.Id, MessageHandlingError.UnknowError, ex.Message);
-                            continue;
+                            WriteSetting(message.GetPropertyValue<string>("googleId"), message.Body);
+                            CompletePeeklock(logger, messageSource, message.Id);
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        CompletePeeklock(logger, messageSource, message.Id, MessageHandlingError.UnknowError, ex.Message);
+                        continue;
                     }
                 }
             }
+        }
+        public void WriteSetting(string uid, byte[] body)
+        {
+            DirectoryInfo dirInfo = new DirectoryInfo(patchFile);
+            //Создаем каталог для файла
+            if (!dirInfo.Exists)
+                dirInfo.Create();
+
+            using (FileStream fs = new FileStream(patchFile + uid, FileMode.OpenOrCreate))
+            {
+                byte[] array = body;
+                fs.Write(array, 0, array.Length);
+            }
+
         }
         public string ExcelToJSON(MemoryStream ms)
         {
@@ -118,7 +138,7 @@ namespace EmailClient
         }
         public MemoryStream DowloadDocument(Message message, IMessageSource messageSource, ILogger logger)
         {
-            if(!GetSettings(message.GetPropertyValue<string>("googleId")))
+            if (!GetSettings(message.GetPropertyValue<string>("googleId")))
             {
                 throw new Exception("Ошибка получения настроек");
             }
@@ -133,9 +153,9 @@ namespace EmailClient
                     throw new Exception("Ошибка отправки запроса серверу");
                 }
                 MemoryStream fs = new MemoryStream();
-               var ResponseTask =  GetTask.Result.Content.CopyToAsync(fs);
-               ResponseTask.Wait(timeOut);
-               return fs;
+                var ResponseTask = GetTask.Result.Content.CopyToAsync(fs);
+                ResponseTask.Wait(timeOut);
+                return fs;
             }
         }
         public bool GetSettings(string uid)
@@ -147,7 +167,7 @@ namespace EmailClient
             {
                 setting = JObject.Parse(sr.ReadToEnd());
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.Error("Ошибка разбора схемы настройки поставщиков " + ex.Message);
                 return false;
@@ -156,7 +176,7 @@ namespace EmailClient
             this.numberList = int.Parse(setting["СхемаЗагрузки"]["НомерЛистаВФайле"].ToString()) - 1;
             this.rowSettings = GetSettingsToRows(setting);
 
-            if(rowSettings.Count < 0)
+            if (rowSettings.Count < 0)
             {
                 logger.Error("Не разобраны строки настроек шаблона");
                 return false;
@@ -192,7 +212,7 @@ namespace EmailClient
         {
             if (string.IsNullOrEmpty(jsonSettings))
                 throw new Exception("Не заданы параметры <jsonSettings>");
-            
+
             JObject jObject;
             try
             {
