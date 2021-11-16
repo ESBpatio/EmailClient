@@ -33,6 +33,7 @@ namespace EmailClient
 
             logger = new Logger(serviceLocator.GetLogger(GetType()),debugMode,"REST клиент");
             urlPatch = @"https://drive.google.com/uc?export=download&id=";
+            ParseSettings(jsonSettings);
         }
         public void Run(IMessageSource messageSource, IMessageReplyHandler replyHandler, CancellationToken ct)
         {
@@ -53,7 +54,7 @@ namespace EmailClient
                     {
                         try
                         {
-                            byte[] body = Encoding.ASCII.GetBytes(ExcelToJSON(DowloadDocument(message, messageSource, logger)));
+                            byte[] body = Encoding.UTF8.GetBytes(ExcelToJSON(DowloadDocument(message, messageSource, logger)));
                             Message replyMessage = new Message()
                             {
                                 Body = body,
@@ -63,7 +64,7 @@ namespace EmailClient
                             };
                             if(!replyHandler.HandleReplyMessage(replyMessage))
                             {
-                                logger.Error("Ошибка отправки ответного сообщения");
+                                //logger.Error("Ошибка отправки ответного сообщения");
                                 CompletePeeklock(logger, messageSource, message.Id, MessageHandlingError.UnknowError, "Ошибка отправки ответного сообщения");
                             }
                             CompletePeeklock(logger, messageSource, message.Id);
@@ -139,7 +140,8 @@ namespace EmailClient
         }
         public bool GetSettings(string uid)
         {
-            var sr = new StreamReader(File.ReadAllText(patchFile + uid));
+            var patchSetting = File.Open((patchFile + uid), FileMode.Open, FileAccess.Read);
+            var sr = new StreamReader(patchSetting);
             JObject setting = null;
             try
             {
@@ -201,10 +203,10 @@ namespace EmailClient
 
                 throw new Exception("Не удалось разобрать строку настроек JSON ! Ошибка : " + ex.Message);
             }
-            debugMode = JSONUtils.BoolValue(jObject, "debugMode");
-            timeOut = JSONUtils.IntValue(jObject, "timeOut", 10);
-            patchFile = JSONUtils.StringValue(jObject, "patchFile", @"C:\ProgramData\tmp");
-            replyClassId = JSONUtils.StringValue(jObject, "replyClassId");
+            debugMode = JsonUtils.BoolValue(jObject, "debugMode");
+            timeOut = JsonUtils.IntValue(jObject, "timeOut", 10);
+            patchFile = JsonUtils.StringValue(jObject, "patchFile", @"C:\ProgramData\tmp");
+            replyClassId = JsonUtils.StringValue(jObject, "replyClassId");
         }
         public void Initialize()
         {
