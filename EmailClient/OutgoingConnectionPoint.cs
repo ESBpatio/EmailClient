@@ -147,7 +147,7 @@ namespace EmailClient
             }
             catch(Exception ex)
             {
-                logger.Error("Ошибка разбора схемы настройки поставщиков");
+                logger.Error("Ошибка разбора схемы настройки поставщиков " + ex.Message);
                 return false;
             }
             this.startToRow = int.Parse(setting["СхемаЗагрузки"]["НачальнаяСтрокаВФайле"].ToString()) - 1;

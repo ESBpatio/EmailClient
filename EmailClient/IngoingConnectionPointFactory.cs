@@ -9,6 +9,7 @@ namespace EmailClient
         public IIngoingConnectionPoint Create(Dictionary<string, string> parameters, IServiceLocator serviceLocator)
         {
             return (IIngoingConnectionPoint)new IngoingConnectionPoint(parameters.GetStringParameter("Настройки в формате JSON", true, ""), serviceLocator);
+            
         }
     }
 }

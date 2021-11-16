@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EmailClient</RootNamespace>
     <AssemblyName>EmailClient</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -32,14 +32,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BouncyCastle.Crypto, Version=1.8.10.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
-      <HintPath>..\packages\Portable.BouncyCastle.1.8.10\lib\net40\BouncyCastle.Crypto.dll</HintPath>
+    <Reference Include="BouncyCastle.Crypto, Version=1.9.0.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
+      <HintPath>..\packages\Portable.BouncyCastle.1.9.0\lib\net40\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
     <Reference Include="ESB_ConnectionPoints.PluginsInterfaces">
-      <HintPath>..\..\..\..\..\..\BPMOnline(RabbitMQ)-1.0.0.40-dotNET-WINDOWS\ESB_ConnectionPoints.PluginsInterfaces.dll</HintPath>
+      <HintPath>.\ESB_ConnectionPoints.PluginsInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="ESB_ConnectionPoints.Utils">
-      <HintPath>..\..\..\..\..\..\BPMOnline(RabbitMQ)-1.0.0.40-dotNET-WINDOWS\ESB_ConnectionPoints.Utils.dll</HintPath>
+      <HintPath>.\ESB_ConnectionPoints.Utils.dll</HintPath>
     </Reference>
     <Reference Include="ExcelDataReader, Version=3.6.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
       <HintPath>..\packages\ExcelDataReader.3.6.0\lib\net45\ExcelDataReader.dll</HintPath>
@@ -51,19 +51,19 @@
       <HintPath>..\packages\MailKit.2.15.0\lib\net45\MailKit.dll</HintPath>
     </Reference>
     <Reference Include="MimeKit, Version=2.15.0.0, Culture=neutral, PublicKeyToken=bede1c8a46c66814, processorArchitecture=MSIL">
-      <HintPath>..\packages\MimeKit.2.15.0\lib\net45\MimeKit.dll</HintPath>
+      <HintPath>..\packages\MimeKit.2.15.1\lib\net48\MimeKit.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Spire.License, Version=1.4.0.40, Culture=neutral, PublicKeyToken=b1144360237c8b3f, processorArchitecture=MSIL">
-      <HintPath>..\packages\Spire.XLS.11.8.0\lib\net40\Spire.License.dll</HintPath>
+      <HintPath>..\packages\Spire.XLS.11.10.5\lib\net40\Spire.License.dll</HintPath>
     </Reference>
-    <Reference Include="Spire.Pdf, Version=7.8.2.0, Culture=neutral, PublicKeyToken=663f351905198cb3, processorArchitecture=MSIL">
-      <HintPath>..\packages\Spire.XLS.11.8.0\lib\net40\Spire.Pdf.dll</HintPath>
+    <Reference Include="Spire.Pdf, Version=7.10.4.0, Culture=neutral, PublicKeyToken=663f351905198cb3, processorArchitecture=MSIL">
+      <HintPath>..\packages\Spire.XLS.11.10.5\lib\net40\Spire.Pdf.dll</HintPath>
     </Reference>
-    <Reference Include="Spire.XLS, Version=11.8.0.0, Culture=neutral, PublicKeyToken=663f351905198cb3, processorArchitecture=MSIL">
-      <HintPath>..\packages\Spire.XLS.11.8.0\lib\net40\Spire.XLS.dll</HintPath>
+    <Reference Include="Spire.XLS, Version=11.10.5.0, Culture=neutral, PublicKeyToken=663f351905198cb3, processorArchitecture=MSIL">
+      <HintPath>..\packages\Spire.XLS.11.10.5\lib\net40\Spire.XLS.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Activities" />
