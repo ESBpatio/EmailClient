@@ -72,7 +72,7 @@ namespace EmailClient
 
                         else if (message.Type == "STG")
                         {
-                            WriteSetting(message.GetPropertyValue<string>("googleId"), message.Body);
+                            WriteSetting(message.GetPropertyValue<string>("Id"), message.Body);
                             CompletePeeklock(logger, messageSource, message.Id);
                         }
                     }
@@ -138,13 +138,13 @@ namespace EmailClient
         }
         public MemoryStream DowloadDocument(Message message, IMessageSource messageSource, ILogger logger)
         {
-            if (!GetSettings(message.GetPropertyValue<string>("googleId")))
+            if (!GetSettings(message.GetPropertyValue<string>("Id")))
             {
                 throw new Exception("Ошибка получения настроек");
             }
             using (HttpClient httpClient = new HttpClient())
             {
-                var GetTask = httpClient.GetAsync(urlPatch + message.GetPropertyValue<string>("googleId"));
+                var GetTask = httpClient.GetAsync(urlPatch + message.GetPropertyValue<string>("Id"));
                 GetTask.Wait(timeOut);
 
                 if (!GetTask.Result.IsSuccessStatusCode)
