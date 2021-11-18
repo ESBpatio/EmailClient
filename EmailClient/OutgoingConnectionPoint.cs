@@ -72,7 +72,12 @@ namespace EmailClient
 
                         else if (message.Type == "STG")
                         {
-                            WriteSetting(message.GetPropertyValue<string>("Id"), message.Body);
+                            string address = message.GetPropertyValue<string>("Id");
+                            string[] arAddreses = address.Split(';');
+                            foreach (string arAddress in arAddreses)
+                            {
+                                WriteSetting(arAddress, message.Body);
+                            }              
                             CompletePeeklock(logger, messageSource, message.Id);
                         }
                     }
