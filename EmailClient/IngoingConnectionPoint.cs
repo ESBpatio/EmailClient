@@ -122,10 +122,10 @@ namespace EmailClient
                                 }
 
                                 FileStream openSettings = File.Open(patchSetting + from + formatSetting, FileMode.Open, FileAccess.Read);
-                                StreamReader sr = new StreamReader(openSettings);
-                                openSettings.Close();
+                                StreamReader sr = new StreamReader(openSettings);                               
 
                                 JObject settingToProvider = JObject.Parse(sr.ReadToEnd());
+                                openSettings.Close();
                                 List<rowSetting> rowSettings = GetSettingsToRows(settingToProvider);
 
                                 if (rowSettings.Count < 0)

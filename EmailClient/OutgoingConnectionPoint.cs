@@ -165,27 +165,29 @@ namespace EmailClient
         }
         public bool GetSettings(string uid)
         {
-            var patchSetting = File.Open((patchFile + uid), FileMode.Open, FileAccess.Read);
-            var sr = new StreamReader(patchSetting);
-            JObject setting = null;
-            try
+            using (var patchSetting = File.Open((patchFile + uid), FileMode.Open, FileAccess.Read))
             {
-                setting = JObject.Parse(sr.ReadToEnd());
-            }
-            catch (Exception ex)
-            {
-                logger.Error("Ошибка разбора схемы настройки поставщиков " + ex.Message);
-                return false;
-            }
-            this.startToRow = int.Parse(setting["СхемаЗагрузки"]["НачальнаяСтрокаВФайле"].ToString()) - 1;
-            this.numberList = int.Parse(setting["СхемаЗагрузки"]["НомерЛистаВФайле"].ToString()) - 1;
-            this.rowSettings = GetSettingsToRows(setting);
+                var sr = new StreamReader(patchSetting);
+                JObject setting = null;
+                try
+                {
+                    setting = JObject.Parse(sr.ReadToEnd());
+                }
+                catch (Exception ex)
+                {
+                    logger.Error("Ошибка разбора схемы настройки поставщиков " + ex.Message);
+                    return false;
+                }
+                this.startToRow = int.Parse(setting["СхемаЗагрузки"]["НачальнаяСтрокаВФайле"].ToString()) - 1;
+                this.numberList = int.Parse(setting["СхемаЗагрузки"]["НомерЛистаВФайле"].ToString()) - 1;
+                this.rowSettings = GetSettingsToRows(setting);
 
-            if (rowSettings.Count < 0)
-            {
-                logger.Error("Не разобраны строки настроек шаблона");
-                return false;
-            }
+                if (rowSettings.Count < 0)
+                {
+                    logger.Error("Не разобраны строки настроек шаблона");
+                    return false;
+                }
+            }            
             return true;
         }
         private List<rowSetting> GetSettingsToRows(JObject jObject)
