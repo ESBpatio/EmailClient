@@ -20,7 +20,7 @@ namespace EmailClient
     {
         private readonly ILogger logger;
         private readonly IMessageFactory messageFactory;
-        private string uri, login, password, classId, type;
+        private string uri, login, password, classId, type , formatSetting, patchSetting;
         private bool ssl;
         private int port, timeout, startLine, sheetNumber;
         public IExcelDataReader reader;
@@ -55,6 +55,8 @@ namespace EmailClient
             this.type = JsonUtils.StringValue(jObject, "MessageSettings.Type", "DTP");
             this.classId = JsonUtils.StringValue(jObject, "MessageSettings.ClassId", "0");
             this.timeout = JsonUtils.IntValue(jObject, "TimeOut", 10);
+            this.formatSetting = JsonUtils.StringValue(jObject, "formatSetting", ".JSON");
+            this.patchSetting = JsonUtils.StringValue(jObject, "patchSetting", @"C:\Settings\");
         }
 
         public void Run(IMessageHandler messageHandler, CancellationToken ct)
@@ -119,7 +121,7 @@ namespace EmailClient
                                     part.Content.DecodeTo(stream);
                                 }
 
-                                FileStream openSettings = File.Open(@"C:\excel\Settings\" + from, FileMode.Open, FileAccess.Read);
+                                FileStream openSettings = File.Open(@"C:\excel\Settings\" + from + formatSetting, FileMode.Open, FileAccess.Read);
                                 StreamReader sr = new StreamReader(openSettings);
 
                                 JObject settingToProvider = JObject.Parse(sr.ReadToEnd());
