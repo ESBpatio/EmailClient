@@ -81,6 +81,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EmailUtils.cs" />
     <Compile Include="IngoingConnectionPoint.cs" />
     <Compile Include="IngoingConnectionPointFactory.cs" />
     <Compile Include="JsonUtils.cs" />

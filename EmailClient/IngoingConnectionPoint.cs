@@ -14,13 +14,14 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
+
 namespace EmailClient
 {
     public class IngoingConnectionPoint : IStandartIngoingConnectionPoint
     {
         private readonly ILogger logger;
         private readonly IMessageFactory messageFactory;
-        private string uri, login, password, classId, type , formatSetting, patchSetting;
+        private string uri, login, password, classId, type , formatSetting, patchSetting, from, subject;
         private bool ssl;
         private int port, timeout, startLine, sheetNumber;
         public IExcelDataReader reader;
@@ -69,7 +70,8 @@ namespace EmailClient
                 }
                 catch (Exception ex)
                 {
-
+                    var email = new EmailUtils();
+                    email.sendMessage(from, ex.Message, uri, port, login, password);
                     logger.Error("Ошибка загрузки письма " + ex.Message);
                 }
                 
@@ -91,8 +93,8 @@ namespace EmailClient
                     var propertyMessage = inbox.Fetch(new[] { i }, MessageSummaryItems.Flags);
                     if (!propertyMessage[0].Flags.Value.HasFlag(MessageFlags.Seen))
                     {
-                        string from = emailMessage.From.OfType<MailboxAddress>().Single().Address;
-                        string subject = emailMessage.Subject;
+                        this.from = emailMessage.From.OfType<MailboxAddress>().Single().Address;
+                        this.subject = emailMessage.Subject;
                         foreach (var attachment in emailMessage.Attachments)
                         {
                             var ext = Regex.Match(attachment.ContentType.Name, "[^.]+$").Value;
@@ -120,8 +122,14 @@ namespace EmailClient
                                     var part = (MimePart)attachment;
                                     part.Content.DecodeTo(stream);
                                 }
-
-                                FileStream openSettings = File.Open(patchSetting + from + formatSetting, FileMode.Open, FileAccess.Read);
+                                FileStream openSettings = null;
+                                try
+                                {
+                                    openSettings = File.Open(patchSetting + from + formatSetting, FileMode.Open, FileAccess.Read);
+                                }catch(Exception ex)
+                                {
+                                    throw new Exception(String.Format(("Невозможно открыть настройки для отправителя {0} , тема письма {1}. \n Описание ошибка : {2} \n Trace : {3}"), from, subject, ex.Message, ex.StackTrace));
+                                }
                                 StreamReader sr = new StreamReader(openSettings);                               
 
                                 JObject settingToProvider = JObject.Parse(sr.ReadToEnd());
