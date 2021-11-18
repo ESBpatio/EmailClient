@@ -41,7 +41,7 @@ namespace EmailClient
             {
                 file = reader.ReadToEnd();
             }
-            mailMessage.Attachments.Add(new Attachment(file));
+            mailMessage.Attachments.Add(new Attachment(file,"test"));
             SmtpClient smtp = new SmtpClient(serverAddress, 587);
             smtp.Credentials = new NetworkCredential(login, password);
             smtp.EnableSsl = true;

@@ -90,8 +90,13 @@ namespace EmailClient
                 inbox.Open(FolderAccess.ReadWrite);
                 for (int i = 0; i < inbox.Count; i++)
                 {
-                    GetMessage(i, inbox, email, messageHandler);
-                    inbox.AddFlags(i, MessageFlags.Seen, true);
+                    var propertyMessage = inbox.Fetch(new[] { i }, MessageSummaryItems.Flags);
+                    var s = propertyMessage[0].Flags.Value.HasFlag(MessageFlags.Seen);
+                    if (!propertyMessage[0].Flags.Value.HasFlag(MessageFlags.Seen))
+                    {
+                        GetMessage(i, inbox, email, messageHandler);
+                        inbox.AddFlags(i, MessageFlags.Seen, true);
+                    }
                 }
             }
         }
@@ -99,14 +104,13 @@ namespace EmailClient
         public void GetMessage(int indexMessage, IMailFolder inbox, EmailUtils emailUtils, IMessageHandler messageHandler)
         {
             MimeMessage emailMessage = inbox.GetMessage(indexMessage);
-            var propertyMessage = inbox.Fetch(new[] { indexMessage }, MessageSummaryItems.Flags);
+
             this.from = emailMessage.From.OfType<MailboxAddress>().Single().Address;
             this.subject = emailMessage.Subject;
 
-            if (!propertyMessage[0].Flags.Value.HasFlag(MessageFlags.Seen))
-            {
-                GetAttachmentFile(emailMessage, messageHandler, emailUtils);
-            }
+
+            GetAttachmentFile(emailMessage, messageHandler, emailUtils);
+
         }
         public void GetAttachmentFile(MimeMessage message, IMessageHandler messageHandler, EmailUtils emailUtils)
         {
@@ -128,7 +132,8 @@ namespace EmailClient
                     if (!CheckFormat(attachment))
                     {
                         string error = string.Format("Файл был пропущен , формат не подходит для обработки.");
-                        emailUtils.sendMessage(from, error, uri, 587, login, password,stream);
+                        //emailUtils.sendMessage(from, error, uri, 587, login, password,stream);
+                        logger.Error(error);
                         continue;
                     }
                     ExcelToJSON(stream, messageHandler);
