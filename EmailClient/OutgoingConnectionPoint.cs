@@ -76,7 +76,7 @@ namespace EmailClient
                             string[] arAddreses = address.Split(';');
                             foreach (string arAddress in arAddreses)
                             {
-                                WriteSetting(arAddress, message.Body);
+                                WriteSetting(arAddress, message.Body, ".JSON");
                             }              
                             CompletePeeklock(logger, messageSource, message.Id);
                         }
@@ -89,14 +89,14 @@ namespace EmailClient
                 }
             }
         }
-        public void WriteSetting(string uid, byte[] body)
+        public void WriteSetting(string uid, byte[] body , string formatFile)
         {
             DirectoryInfo dirInfo = new DirectoryInfo(patchFile);
             //Создаем каталог для файла
             if (!dirInfo.Exists)
                 dirInfo.Create();
 
-            using (FileStream fs = new FileStream(patchFile + uid, FileMode.OpenOrCreate))
+            using (FileStream fs = new FileStream(patchFile + uid + formatFile, FileMode.OpenOrCreate))
             {
                 byte[] array = body;
                 fs.Write(array, 0, array.Length);
