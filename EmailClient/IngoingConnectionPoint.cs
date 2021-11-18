@@ -121,8 +121,9 @@ namespace EmailClient
                                     part.Content.DecodeTo(stream);
                                 }
 
-                                FileStream openSettings = File.Open(@"C:\excel\Settings\" + from + formatSetting, FileMode.Open, FileAccess.Read);
+                                FileStream openSettings = File.Open(patchSetting + from + formatSetting, FileMode.Open, FileAccess.Read);
                                 StreamReader sr = new StreamReader(openSettings);
+                                openSettings.Close();
 
                                 JObject settingToProvider = JObject.Parse(sr.ReadToEnd());
                                 List<rowSetting> rowSettings = GetSettingsToRows(settingToProvider);
