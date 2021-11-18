@@ -22,7 +22,7 @@ namespace EmailClient
         private readonly string urlPatch;
         private int timeOut;
         private string patchFile;
-        string replyClassId;
+        string replyClassId, formatSetting;
         int startToRow = 0, numberList = 0;
         List<rowSetting> rowSettings = null;
 
@@ -76,7 +76,7 @@ namespace EmailClient
                             string[] arAddreses = address.Split(';');
                             foreach (string arAddress in arAddreses)
                             {
-                                WriteSetting(arAddress, message.Body, ".JSON");
+                                WriteSetting(arAddress, message.Body, formatSetting);
                             }              
                             CompletePeeklock(logger, messageSource, message.Id);
                         }
@@ -232,6 +232,7 @@ namespace EmailClient
             timeOut = JsonUtils.IntValue(jObject, "timeOut", 10);
             patchFile = JsonUtils.StringValue(jObject, "patchFile", @"C:\ProgramData\tmp");
             replyClassId = JsonUtils.StringValue(jObject, "replyClassId");
+            formatSetting = JsonUtils.StringValue(jObject, "formatSetting", ".JSON");
         }
         public void Initialize()
         {
