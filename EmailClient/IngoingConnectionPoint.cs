@@ -66,135 +66,163 @@ namespace EmailClient
             {
                 try
                 {
-                    GetMessage(messageHandler);
+                    GetMessages(messageHandler);
                 }
                 catch (Exception ex)
                 {
-                    var email = new EmailUtils();
-                    email.sendMessage(from, ex.Message, uri, port, login, password);
                     logger.Error("Ошибка загрузки письма " + ex.Message);
+                    //email.sendMessage(from, ex.Message, uri, port, login, password);
                 }
                 
                 ct.WaitHandle.WaitOne(timeout);
             }
         }
 
-        public void GetMessage(IMessageHandler messageHandler)
+        public void GetMessages(IMessageHandler messageHandler)
         {
             using (ImapClient client = new ImapClient())
             {
+                EmailUtils email = new EmailUtils();
+
                 client.Connect(uri, port, ssl);
                 client.Authenticate(login, password);
                 IMailFolder inbox = client.Inbox;
                 inbox.Open(FolderAccess.ReadWrite);
                 for (int i = 0; i < inbox.Count; i++)
                 {
-                    MimeMessage emailMessage = inbox.GetMessage(i);
-                    var propertyMessage = inbox.Fetch(new[] { i }, MessageSummaryItems.Flags);
-                    if (!propertyMessage[0].Flags.Value.HasFlag(MessageFlags.Seen))
-                    {
-                        this.from = emailMessage.From.OfType<MailboxAddress>().Single().Address;
-                        this.subject = emailMessage.Subject;
-                        foreach (var attachment in emailMessage.Attachments)
-                        {
-                            var ext = Regex.Match(attachment.ContentType.Name, "[^.]+$").Value;
-                            switch (ext)
-                            {
-                                case "xlsx":
-                                    break;
-                                case "xls":
-                                    break;
-                                default:
-                                    logger.Warning("Файл был пропущен , формат не подходит для обработки");
-                                    continue;
-                            }
-
-                            MemoryStream ms = new MemoryStream();
-                            using (MemoryStream stream = ms)
-                            {
-                                if (attachment is MessagePart)
-                                {
-                                    var part = (MessagePart)attachment;
-                                    part.Message.WriteTo(stream);
-                                }
-                                else
-                                {
-                                    var part = (MimePart)attachment;
-                                    part.Content.DecodeTo(stream);
-                                }
-                                FileStream openSettings = null;
-                                try
-                                {
-                                    openSettings = File.Open(patchSetting + from + formatSetting, FileMode.Open, FileAccess.Read);
-                                }catch(Exception ex)
-                                {
-                                    throw new Exception(String.Format(("Невозможно открыть настройки для отправителя {0} , тема письма {1}. \n Описание ошибка : {2} \n Trace : {3}"), from, subject, ex.Message, ex.StackTrace));
-                                }
-                                StreamReader sr = new StreamReader(openSettings);                               
-
-                                JObject settingToProvider = JObject.Parse(sr.ReadToEnd());
-                                openSettings.Close();
-                                List<rowSetting> rowSettings = GetSettingsToRows(settingToProvider);
-
-                                if (rowSettings.Count < 0)
-                                {
-                                    logger.Warning(string.Format("Настройки не найдены для отправителя {0} , тема письма : {1}", from , subject));
-                                    inbox.AddFlags(i, MessageFlags.Seen, true);
-                                //  sr.Close();
-                                    continue;
-                                }    
-                                //sr.Close();
-
-                                startLine = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НачальнаяСтрокаВФайле") - 1);
-                                sheetNumber = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НомерЛистаВФайле") - 1);
-
-                                reader = ExcelReaderFactory.CreateReader(stream);
-                                var conf = new ExcelDataSetConfiguration
-                                {
-                                    ConfigureDataTable = _ => new ExcelDataTableConfiguration
-                                    {
-                                        //UseHeaderRow = true
-                                        UseHeaderRow = false,
-                                        FilterRow = rowReader => rowReader.Depth > startLine
-                                    }
-                                };
-                                DataSet dataSet = reader.AsDataSet(conf);
-                                DataTable dataTable = dataSet.Tables[sheetNumber];
-
-                                DataTable dt = new DataTable();
-                                foreach (var item in rowSettings)
-                                {
-                                    DataColumn dataColumn = dataTable.Columns[item.numberCol - 1];
-                                    DataColumn column = new DataColumn()
-                                    {
-                                        ColumnName = item.viewCol,
-                                        DataType = dataColumn.DataType,
-                                        Expression = dataColumn.Expression,
-                                        ColumnMapping = dataColumn.ColumnMapping
-                                    };
-                                    dt.Columns.Add(column);
-                                }
-                                foreach (DataRow item in dataTable.Rows)
-                                {
-                                    DataRow newRow = dt.NewRow();
-                                    for(int j = 0; j < rowSettings.Count(); j++)
-                                    {
-                                        newRow[dt.Columns[j].ColumnName] = item[dataTable.Columns[rowSettings[j].numberCol - 1]];
-                                    }
-                                    dt.Rows.Add(newRow);
-                                }
-                                CreateESBMessage(JsonConvert.SerializeObject(dt), messageHandler, subject, from);
-
-                            }
-                        }
-                        inbox.AddFlags(i, MessageFlags.Seen, true);
-                    }
+                    GetMessage(i, inbox, email, messageHandler);
+                    inbox.AddFlags(i, MessageFlags.Seen, true);
                 }
             }
         }
 
+        public void GetMessage(int indexMessage, IMailFolder inbox, EmailUtils emailUtils, IMessageHandler messageHandler)
+        {
+            MimeMessage emailMessage = inbox.GetMessage(indexMessage);
+            var propertyMessage = inbox.Fetch(new[] { indexMessage }, MessageSummaryItems.Flags);
+            this.from = emailMessage.From.OfType<MailboxAddress>().Single().Address;
+            this.subject = emailMessage.Subject;
 
-        private List<rowSetting> GetSettingsToRows(JObject jObject)
+            if (!propertyMessage[0].Flags.Value.HasFlag(MessageFlags.Seen))
+            {
+                GetAttachmentFile(emailMessage, messageHandler, emailUtils);
+            }
+        }
+        public void GetAttachmentFile(MimeMessage message, IMessageHandler messageHandler, EmailUtils emailUtils)
+        {
+            foreach (var attachment in message.Attachments)
+            {
+                MemoryStream ms = new MemoryStream();
+                using (MemoryStream stream = ms)
+                {
+                    if (attachment is MessagePart)
+                    {
+                        var part = (MessagePart)attachment;
+                        part.Message.WriteTo(stream);
+                    }
+                    else
+                    {
+                        var part = (MimePart)attachment;
+                        part.Content.DecodeTo(stream);
+                    }
+                    if (!CheckFormat(attachment))
+                    {
+                        string error = string.Format("Файл был пропущен , формат не подходит для обработки.");
+                        emailUtils.sendMessage(from, error, uri, 587, login, password,stream);
+                        continue;
+                    }
+                    ExcelToJSON(stream, messageHandler);
+                }
+            }
+        }
+        public void ExcelToJSON(MemoryStream stream, IMessageHandler messageHandler)
+        {
+            reader = ExcelReaderFactory.CreateReader(stream);
+            var conf = new ExcelDataSetConfiguration
+            {
+                ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                {
+                    //UseHeaderRow = true
+                    UseHeaderRow = false,
+                    FilterRow = rowReader => rowReader.Depth > startLine
+                }
+            };
+            List<rowSetting> rowSettings = GetSetting();
+            DataSet dataSet = reader.AsDataSet(conf);
+            DataTable dataTable = dataSet.Tables[sheetNumber];
+
+            DataTable dt = new DataTable();
+            foreach (var item in rowSettings)
+            {
+                DataColumn dataColumn = dataTable.Columns[item.numberCol - 1];
+                DataColumn column = new DataColumn()
+                {
+                    ColumnName = item.viewCol,
+                    DataType = dataColumn.DataType,
+                    Expression = dataColumn.Expression,
+                    ColumnMapping = dataColumn.ColumnMapping
+                };
+                dt.Columns.Add(column);
+            }
+            foreach (DataRow item in dataTable.Rows)
+            {
+                DataRow newRow = dt.NewRow();
+                for (int j = 0; j < rowSettings.Count(); j++)
+                {
+                    newRow[dt.Columns[j].ColumnName] = item[dataTable.Columns[rowSettings[j].numberCol - 1]];
+                }
+                dt.Rows.Add(newRow);
+            }
+            CreateESBMessage(JsonConvert.SerializeObject(dt), messageHandler, subject, from);
+        }
+
+        public List<rowSetting> GetSetting()
+        {
+            FileStream openSettings = null;
+            try
+            {
+                openSettings = File.Open(patchSetting + from + formatSetting, FileMode.Open, FileAccess.Read);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(String.Format(("Невозможно открыть настройки для отправителя {0} , тема письма {1}. \n Описание ошибка : {2} \n Trace : {3}"), from, subject, ex.Message, ex.StackTrace));
+            }
+            StreamReader sr = new StreamReader(openSettings);
+
+            JObject settingToProvider = JObject.Parse(sr.ReadToEnd());
+            openSettings.Close();
+            List<rowSetting> rowSettings = GetSettingsToRows(settingToProvider);
+
+            if (rowSettings.Count < 0)
+            {
+                logger.Warning(string.Format("Настройки не найдены для отправителя {0} , тема письма : {1}", from, subject));
+                //inbox.AddFlags(i, MessageFlags.Seen, true);
+                //  sr.Close();
+                //continue;
+            }
+            //sr.Close();
+
+            startLine = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НачальнаяСтрокаВФайле") - 1);
+            sheetNumber = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НомерЛистаВФайле") - 1);
+            return rowSettings;
+        }
+
+        public bool CheckFormat(MimeEntity attachment)
+        {
+            var ext = Regex.Match(attachment.ContentType.Name, "[^.]+$").Value;
+            switch (ext)
+            {
+                case "xlsx":
+                    break;
+                case "xls":
+                    break;
+                default:
+                    return false;
+            }
+            return true;
+        }
+
+        public List<rowSetting> GetSettingsToRows(JObject jObject)
         {
             List<rowSetting> rowSettings = new List<rowSetting>();
             foreach (var item in jObject["СхемаЗагрузки"]["ЗагружаеммыеПоля"])
@@ -209,7 +237,7 @@ namespace EmailClient
             return rowSettings;
         }
 
-        class rowSetting
+        public class rowSetting
         {
             public int numberCol { get; set; }
             public string viewCol { get; set; }
