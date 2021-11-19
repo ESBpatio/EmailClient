@@ -21,11 +21,12 @@ namespace EmailClient
     {
         private readonly ILogger logger;
         private readonly IMessageFactory messageFactory;
-        private string uri, login, password, classId, type, formatSetting, patchSetting, from, subject, patchToDisk,responsiblePerson, fileName;
+        private string uri, login, password, classId, type, formatSetting, patchSetting, from, subject, patchToDisk, responsiblePerson, fileName;
         private bool ssl;
         private int port, timeout, startLine, sheetNumber;
         public IExcelDataReader reader;
         public EmailUtils email;
+        public IMailFolder inbox;
 
         public IngoingConnectionPoint(string jsonSettings, IServiceLocator serviceLocator)
         {
@@ -71,10 +72,10 @@ namespace EmailClient
                 }
                 catch (Exception ex)
                 {
-                    logger.Error("Ошибка загрузки письма " + ex.Message);
-                    //email.sendMessage(from, ex.Message, uri, port, login, password);
+                    string error = string.Format("Ошибка загрузки письма " + ex.Message);
+                    logger.Error(error);
+                    email.sendMessage(responsiblePerson, error, uri, 587, login, password);
                 }
-
                 ct.WaitHandle.WaitOne(timeout);
             }
         }
@@ -84,7 +85,7 @@ namespace EmailClient
             {
                 client.Connect(uri, port, ssl);
                 client.Authenticate(login, password);
-                IMailFolder inbox = client.Inbox;
+                inbox = client.Inbox;
                 inbox.Open(FolderAccess.ReadWrite);
                 for (int i = 0; i < inbox.Count; i++)
                 {
@@ -106,10 +107,10 @@ namespace EmailClient
             this.subject = emailMessage.Subject;
 
 
-            GetAttachmentFile(emailMessage, messageHandler);
+            GetAttachmentFile(emailMessage, messageHandler, indexMessage);
 
         }
-        public void GetAttachmentFile(MimeMessage message, IMessageHandler messageHandler)
+        public void GetAttachmentFile(MimeMessage message, IMessageHandler messageHandler, int indexMessage)
         {
             foreach (var attachment in message.Attachments)
             {
@@ -144,11 +145,11 @@ namespace EmailClient
                             continue;
                         }
                     }
-                    ExcelToJSON(stream, messageHandler);
+                    ExcelToJSON(stream, messageHandler, indexMessage);
                 }
             }
         }
-        public void ExcelToJSON(MemoryStream stream, IMessageHandler messageHandler)
+        public void ExcelToJSON(MemoryStream stream, IMessageHandler messageHandler, int indexMessage)
         {
             reader = ExcelReaderFactory.CreateReader(stream);
             var conf = new ExcelDataSetConfiguration
@@ -160,7 +161,7 @@ namespace EmailClient
                     FilterRow = rowReader => rowReader.Depth > startLine
                 }
             };
-            List<rowSetting> rowSettings = GetSetting();
+            List<rowSetting> rowSettings = GetSetting(indexMessage);
             DataSet dataSet = reader.AsDataSet(conf);
             DataTable dataTable = dataSet.Tables[sheetNumber];
 
@@ -188,7 +189,7 @@ namespace EmailClient
             }
             CreateESBMessage(JsonConvert.SerializeObject(dt), messageHandler, subject, from);
         }
-        public List<rowSetting> GetSetting()
+        public List<rowSetting> GetSetting(int indexMessage)
         {
             FileStream openSettings = null;
             try
@@ -213,6 +214,7 @@ namespace EmailClient
                 //inbox.AddFlags(i, MessageFlags.Seen, true);
                 //  sr.Close();
                 //continue;
+                inbox.AddFlags(indexMessage, MessageFlags.Seen, true);
                 string error = string.Format("Настройки не найдены для отправителя {0} , тема письма : {1}", from, subject);
                 email.sendMessage(responsiblePerson, error, uri, 587, login, password);
                 throw new Exception(error);
