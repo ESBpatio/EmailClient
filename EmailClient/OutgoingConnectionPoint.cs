@@ -1,17 +1,16 @@
 ﻿using ESB_ConnectionPoints.PluginsInterfaces;
-using System;
-using System.Threading;
 using ESB_ConnectionPoints.Utils;
-using Newtonsoft.Json.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.IO;
 using ExcelDataReader;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Net.Http;
 using System.Text;
+using System.Threading;
 
 namespace EmailClient
 {
@@ -77,7 +76,7 @@ namespace EmailClient
                             foreach (string arAddress in arAddreses)
                             {
                                 WriteSetting(arAddress, message.Body, formatSetting);
-                            }              
+                            }
                             CompletePeeklock(logger, messageSource, message.Id);
                         }
                     }
@@ -89,7 +88,7 @@ namespace EmailClient
                 }
             }
         }
-        public void WriteSetting(string uid, byte[] body , string formatFile)
+        public void WriteSetting(string uid, byte[] body, string formatFile)
         {
             DirectoryInfo dirInfo = new DirectoryInfo(patchFile);
             //Создаем каталог для файла
@@ -187,7 +186,7 @@ namespace EmailClient
                     logger.Error("Не разобраны строки настроек шаблона");
                     return false;
                 }
-            }            
+            }
             return true;
         }
         private List<rowSetting> GetSettingsToRows(JObject jObject)

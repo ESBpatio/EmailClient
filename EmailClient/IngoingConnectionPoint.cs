@@ -1,18 +1,18 @@
 ﻿using ESB_ConnectionPoints.PluginsInterfaces;
-using Newtonsoft.Json.Linq;
-using System.Threading;
-using System;
-using MailKit.Net.Imap;
-using System.IO;
-using MimeKit;
-using MailKit;
-using System.Text.RegularExpressions;
 using ExcelDataReader;
-using System.Data;
+using MailKit;
+using MailKit.Net.Imap;
+using MimeKit;
 using Newtonsoft.Json;
-using System.Text;
-using System.Linq;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 
 
 namespace EmailClient
@@ -21,10 +21,11 @@ namespace EmailClient
     {
         private readonly ILogger logger;
         private readonly IMessageFactory messageFactory;
-        private string uri, login, password, classId, type , formatSetting, patchSetting, from, subject , patchToDisk;
+        private string uri, login, password, classId, type, formatSetting, patchSetting, from, subject, patchToDisk,responsiblePerson, fileName;
         private bool ssl;
         private int port, timeout, startLine, sheetNumber;
         public IExcelDataReader reader;
+        public EmailUtils email;
 
         public IngoingConnectionPoint(string jsonSettings, IServiceLocator serviceLocator)
         {
@@ -35,7 +36,6 @@ namespace EmailClient
             }
             this.ParseSettings(jsonSettings);
         }
-
         public void ParseSettings(string jsonSettings)
         {
             JObject jObject;
@@ -59,8 +59,8 @@ namespace EmailClient
             this.formatSetting = JsonUtils.StringValue(jObject, "formatSetting", ".JSON");
             this.patchSetting = JsonUtils.StringValue(jObject, "patchSetting", @"C:\Settings\");
             this.patchToDisk = JsonUtils.StringValue(jObject, "patchToDisk", @"C:\tmp\");
+            this.responsiblePerson = JsonUtils.StringValue(jObject, "responsiblePerson");
         }
-
         public void Run(IMessageHandler messageHandler, CancellationToken ct)
         {
             while (!ct.IsCancellationRequested)
@@ -74,17 +74,14 @@ namespace EmailClient
                     logger.Error("Ошибка загрузки письма " + ex.Message);
                     //email.sendMessage(from, ex.Message, uri, port, login, password);
                 }
-                
+
                 ct.WaitHandle.WaitOne(timeout);
             }
         }
-
         public void GetMessages(IMessageHandler messageHandler)
         {
             using (ImapClient client = new ImapClient())
             {
-                EmailUtils email = new EmailUtils();
-
                 client.Connect(uri, port, ssl);
                 client.Authenticate(login, password);
                 IMailFolder inbox = client.Inbox;
@@ -101,7 +98,6 @@ namespace EmailClient
                 }
             }
         }
-
         public void GetMessage(int indexMessage, IMailFolder inbox, EmailUtils emailUtils, IMessageHandler messageHandler)
         {
             MimeMessage emailMessage = inbox.GetMessage(indexMessage);
@@ -110,17 +106,17 @@ namespace EmailClient
             this.subject = emailMessage.Subject;
 
 
-            GetAttachmentFile(emailMessage, messageHandler, emailUtils);
+            GetAttachmentFile(emailMessage, messageHandler);
 
         }
-        public void GetAttachmentFile(MimeMessage message, IMessageHandler messageHandler, EmailUtils emailUtils)
+        public void GetAttachmentFile(MimeMessage message, IMessageHandler messageHandler)
         {
             foreach (var attachment in message.Attachments)
             {
                 MemoryStream ms = new MemoryStream();
                 using (MemoryStream stream = ms)
                 {
-                    string fileName = attachment.ContentDisposition.FileName;
+                    this.fileName = attachment.ContentDisposition.FileName;
 
                     if (attachment is MessagePart)
                     {
@@ -134,14 +130,15 @@ namespace EmailClient
                     }
                     if (!CheckFormat(attachment))
                     {
-                        Boolean createDisk = emailUtils.AddFileToDist(stream, fileName, patchToDisk);
-                        if(createDisk)
+                        Boolean createDisk = email.AddFileToDist(stream, fileName, patchToDisk);
+                        if (createDisk)
                         {
                             string error = string.Format("Файл был пропущен , формат не подходит для обработки.");
-                            emailUtils.sendMessage(from, error, uri, 587, login, password, patchToDisk + fileName);
+                            email.sendMessage(from, error, uri, 587, login, password, patchToDisk + fileName);
                             logger.Error(String.Format("Ошибка : {0} Отправитель {1} , тема письма {2}", error, from, subject));
                             continue;
-                        }else
+                        }
+                        else
                         {
                             logger.Error(String.Format("Файл не был добавлен на диск название файла {0}.Отправитель {1} , тема письма {2} ", fileName, from, subject));
                             continue;
@@ -191,7 +188,6 @@ namespace EmailClient
             }
             CreateESBMessage(JsonConvert.SerializeObject(dt), messageHandler, subject, from);
         }
-
         public List<rowSetting> GetSetting()
         {
             FileStream openSettings = null;
@@ -201,7 +197,9 @@ namespace EmailClient
             }
             catch (Exception ex)
             {
-                throw new Exception(String.Format(("Невозможно открыть настройки для отправителя {0} , тема письма {1}. \n Описание ошибка : {2} \n Trace : {3}"), from, subject, ex.Message, ex.StackTrace));
+                string error = String.Format(("Невозможно открыть настройки для отправителя {0} , тема письма {1}. \n Описание ошибка : {2} \n Trace : {3}"), from, subject, ex.Message, ex.StackTrace);
+                email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                throw new Exception(error);
             }
             StreamReader sr = new StreamReader(openSettings);
 
@@ -211,10 +209,13 @@ namespace EmailClient
 
             if (rowSettings.Count < 0)
             {
-                logger.Warning(string.Format("Настройки не найдены для отправителя {0} , тема письма : {1}", from, subject));
+                //logger.Warning(string.Format("Настройки не найдены для отправителя {0} , тема письма : {1}", from, subject));
                 //inbox.AddFlags(i, MessageFlags.Seen, true);
                 //  sr.Close();
                 //continue;
+                string error = string.Format("Настройки не найдены для отправителя {0} , тема письма : {1}", from, subject);
+                email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                throw new Exception(error);
             }
             //sr.Close();
 
@@ -222,7 +223,6 @@ namespace EmailClient
             sheetNumber = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НомерЛистаВФайле") - 1);
             return rowSettings;
         }
-
         public bool CheckFormat(MimeEntity attachment)
         {
             var ext = Regex.Match(attachment.ContentType.Name, "[^.]+$").Value;
@@ -237,7 +237,6 @@ namespace EmailClient
             }
             return true;
         }
-
         public List<rowSetting> GetSettingsToRows(JObject jObject)
         {
             List<rowSetting> rowSettings = new List<rowSetting>();
@@ -252,41 +251,36 @@ namespace EmailClient
             }
             return rowSettings;
         }
-
         public class rowSetting
         {
             public int numberCol { get; set; }
             public string viewCol { get; set; }
         }
-
-        public void CreateESBMessage(string jsonBody, IMessageHandler messageHandler, string subject , string from)
+        public void CreateESBMessage(string jsonBody, IMessageHandler messageHandler, string subject, string from)
         {
             Message esbMessage = new Message
             {
                 ClassId = classId,
                 Body = Encoding.UTF8.GetBytes(jsonBody),
                 Id = Guid.NewGuid(),
-                Type = type,                
+                Type = type,
             };
             esbMessage.SetPropertyWithValue("from", from);
             esbMessage.SetPropertyWithValue("subject", subject);
 
             messageHandler.HandleMessage(esbMessage);
         }
-
         public void Cleanup()
         {
 
         }
-
         public void Dispose()
         {
 
         }
-
         public void Initialize()
         {
-
+            email = new EmailUtils();
         }
     }
 }

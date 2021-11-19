@@ -1,24 +1,18 @@
-﻿using MailKit.Net.Imap;
-using MimeKit;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Mail;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EmailClient
 {
     public class EmailUtils
     {
-        public void sendMessage(string emailClient, string error , string serverAddress , int port,string login, string password)
+        public void sendMessage(string emailClient, string error, string serverAddress, int port, string login, string password)
         {
             MailAddress from = new MailAddress("info.price@patio-minsk.by", "ESBinfo");
             MailAddress to = new MailAddress(emailClient);
             MailMessage mailMessage = new MailMessage(from, to);
-            
+
             mailMessage.Subject = "Ошибка при загрузке вложения";
             mailMessage.Body = string.Format("<h2>Произошла ошибка при загрузке письма. Ошибка : {0}</h2>", error);
             mailMessage.IsBodyHtml = true;
@@ -61,7 +55,7 @@ namespace EmailClient
                     memoryStream.WriteTo(fs);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return false;
             }

@@ -1,6 +1,6 @@
 ﻿using ESB_ConnectionPoints.PluginsInterfaces;
-using System.Collections.Generic;
 using ESB_ConnectionPoints.Utils;
+using System.Collections.Generic;
 
 namespace EmailClient
 {
@@ -9,7 +9,7 @@ namespace EmailClient
         public IIngoingConnectionPoint Create(Dictionary<string, string> parameters, IServiceLocator serviceLocator)
         {
             return (IIngoingConnectionPoint)new IngoingConnectionPoint(parameters.GetStringParameter("Настройки в формате JSON", true, ""), serviceLocator);
-            
+
         }
     }
 }
