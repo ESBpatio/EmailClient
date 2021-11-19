@@ -21,7 +21,7 @@ namespace EmailClient
     {
         private readonly ILogger logger;
         private readonly IMessageFactory messageFactory;
-        private string uri, login, password, classId, type , formatSetting, patchSetting, from, subject;
+        private string uri, login, password, classId, type , formatSetting, patchSetting, from, subject , patchToDisk;
         private bool ssl;
         private int port, timeout, startLine, sheetNumber;
         public IExcelDataReader reader;
@@ -58,6 +58,7 @@ namespace EmailClient
             this.timeout = JsonUtils.IntValue(jObject, "TimeOut", 10);
             this.formatSetting = JsonUtils.StringValue(jObject, "formatSetting", ".JSON");
             this.patchSetting = JsonUtils.StringValue(jObject, "patchSetting", @"C:\Settings\");
+            this.patchToDisk = JsonUtils.StringValue(jObject, "patchToDisk", @"C:\tmp\");
         }
 
         public void Run(IMessageHandler messageHandler, CancellationToken ct)
@@ -119,6 +120,8 @@ namespace EmailClient
                 MemoryStream ms = new MemoryStream();
                 using (MemoryStream stream = ms)
                 {
+                    string fileName = attachment.ContentDisposition.FileName;
+
                     if (attachment is MessagePart)
                     {
                         var part = (MessagePart)attachment;
@@ -131,10 +134,18 @@ namespace EmailClient
                     }
                     if (!CheckFormat(attachment))
                     {
-                        string error = string.Format("Файл был пропущен , формат не подходит для обработки.");
-                        //emailUtils.sendMessage(from, error, uri, 587, login, password,stream);
-                        logger.Error(error);
-                        continue;
+                        Boolean createDisk = emailUtils.AddFileToDist(stream, fileName, patchToDisk);
+                        if(createDisk)
+                        {
+                            string error = string.Format("Файл был пропущен , формат не подходит для обработки.");
+                            emailUtils.sendMessage(from, error, uri, 587, login, password, patchToDisk + fileName);
+                            logger.Error(String.Format("Ошибка : {0} Отправитель {1} , тема письма {2}", error, from, subject));
+                            continue;
+                        }else
+                        {
+                            logger.Error(String.Format("Файл не был добавлен на диск название файла {0}.Отправитель {1} , тема письма {2} ", fileName, from, subject));
+                            continue;
+                        }
                     }
                     ExcelToJSON(stream, messageHandler);
                 }
