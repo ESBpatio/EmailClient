@@ -21,7 +21,7 @@ namespace EmailClient
     {
         private readonly ILogger logger;
         private readonly IMessageFactory messageFactory;
-        private string uri, login, password, classId, type, formatSetting, patchSetting, from, subject, patchToDisk, responsiblePerson, fileName;
+        private string uri, login, password, classId, type, formatSetting, patchSetting, from, subject, patchToDisk, responsiblePerson, fileName, idObject;
         private bool ssl;
         private int port, timeout, startLine, sheetNumber;
         public IExcelDataReader reader;
@@ -223,6 +223,7 @@ namespace EmailClient
 
             startLine = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НачальнаяСтрокаВФайле") - 1);
             sheetNumber = (JsonUtils.IntValue(settingToProvider, "СхемаЗагрузки.НомерЛистаВФайле") - 1);
+            idObject = (JsonUtils.StringValue(settingToProvider, "СхемаЗагрузки.СсылкаНаСхему"));
             return rowSettings;
         }
         public bool CheckFormat(MimeEntity attachment)
@@ -269,6 +270,7 @@ namespace EmailClient
             };
             esbMessage.SetPropertyWithValue("from", from);
             esbMessage.SetPropertyWithValue("subject", subject);
+            esbMessage.SetPropertyWithValue("idObject", idObject);
 
             messageHandler.HandleMessage(esbMessage);
         }
