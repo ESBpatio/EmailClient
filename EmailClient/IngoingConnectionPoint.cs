@@ -72,7 +72,7 @@ namespace EmailClient
                 }
                 catch (Exception ex)
                 {
-                    string error = string.Format("Ошибка загрузки письма " + ex.Message);
+                    string error = string.Format("Ошибка загрузки письма " + ex.Message + "\n" + ex.StackTrace);
                     logger.Error(error);
                     email.sendMessage(responsiblePerson, error, uri, 587, login, password);
                 }
