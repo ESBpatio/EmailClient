@@ -96,10 +96,15 @@ namespace EmailClient
             //Создаем каталог для файла
             if (!dirInfo.Exists)
                 dirInfo.Create();
+            using (var fs = new FileStream(patchFile + uid + formatFile, FileMode.Truncate))
+            {
+            }
 
             using (FileStream fs = new FileStream(patchFile + uid + formatFile, FileMode.OpenOrCreate))
             {
+
                 byte[] array = body;
+                
                 fs.Write(array, 0, array.Length);
             }
 
