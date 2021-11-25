@@ -192,8 +192,9 @@ namespace EmailClient
             }catch(Exception ex)
             {
                 string error = string.Format("Ошибка преобразования файла " + ex.Message);
-                email.sendMessage(from + ";" + responsiblePerson, error, uri, 587, login, password);
-               // email.sendMessage(from, error, uri, 587, login, password);
+                //email.sendMessage(from + ";" + responsiblePerson, error, uri, 587, login, password);
+                email.sendMessage(from, error, uri, 587, login, password);
+                email.sendMessage(responsiblePerson, error, uri, 587, login, password);
                 logger.Error(String.Format("Ошибка : {0} Отправитель {1} , тема письма {2}", error, from, subject));
             }
         }
