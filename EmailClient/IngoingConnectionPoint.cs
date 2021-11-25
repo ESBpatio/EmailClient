@@ -151,43 +151,51 @@ namespace EmailClient
         }
         public void ExcelToJSON(MemoryStream stream, IMessageHandler messageHandler, int indexMessage)
         {
-            reader = ExcelReaderFactory.CreateReader(stream);
-            var conf = new ExcelDataSetConfiguration
+            try
             {
-                ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                reader = ExcelReaderFactory.CreateReader(stream);
+                var conf = new ExcelDataSetConfiguration
                 {
-                    //UseHeaderRow = true
-                    UseHeaderRow = false,
-                    FilterRow = rowReader => rowReader.Depth > startLine
-                }
-            };
-            List<rowSetting> rowSettings = GetSetting(indexMessage);
-            DataSet dataSet = reader.AsDataSet(conf);
-            DataTable dataTable = dataSet.Tables[sheetNumber];
-
-            DataTable dt = new DataTable();
-            foreach (var item in rowSettings)
-            {
-                DataColumn dataColumn = dataTable.Columns[item.numberCol - 1];
-                DataColumn column = new DataColumn()
-                {
-                    ColumnName = item.viewCol,
-                    DataType = dataColumn.DataType,
-                    Expression = dataColumn.Expression,
-                    ColumnMapping = dataColumn.ColumnMapping
+                    ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                    {
+                        //UseHeaderRow = true
+                        UseHeaderRow = false,
+                        FilterRow = rowReader => rowReader.Depth >= startLine
+                    }
                 };
-                dt.Columns.Add(column);
-            }
-            foreach (DataRow item in dataTable.Rows)
-            {
-                DataRow newRow = dt.NewRow();
-                for (int j = 0; j < rowSettings.Count(); j++)
+                List<rowSetting> rowSettings = GetSetting(indexMessage);
+                DataSet dataSet = reader.AsDataSet(conf);
+                DataTable dataTable = dataSet.Tables[sheetNumber];
+
+                DataTable dt = new DataTable();
+                foreach (var item in rowSettings)
                 {
-                    newRow[dt.Columns[j].ColumnName] = item[dataTable.Columns[rowSettings[j].numberCol - 1]];
+                    DataColumn dataColumn = dataTable.Columns[item.numberCol - 1];
+                    DataColumn column = new DataColumn()
+                    {
+                        ColumnName = item.viewCol,
+                        DataType = dataColumn.DataType,
+                        Expression = dataColumn.Expression,
+                        ColumnMapping = dataColumn.ColumnMapping
+                    };
+                    dt.Columns.Add(column);
                 }
-                dt.Rows.Add(newRow);
+                foreach (DataRow item in dataTable.Rows)
+                {
+                    DataRow newRow = dt.NewRow();
+                    for (int j = 0; j < rowSettings.Count(); j++)
+                    {
+                        newRow[dt.Columns[j].ColumnName] = item[dataTable.Columns[rowSettings[j].numberCol - 1]];
+                    }
+                    dt.Rows.Add(newRow);
+                }
+                CreateESBMessage(JsonConvert.SerializeObject(dt), messageHandler, subject, from);
+            }catch(Exception ex)
+            {
+                string error = string.Format("Ошибка преобразования файла " + ex.Message);
+                email.sendMessage(from, error, uri, 587, login, password, patchToDisk + fileName);
+                logger.Error(String.Format("Ошибка : {0} Отправитель {1} , тема письма {2}", error, from, subject));
             }
-            CreateESBMessage(JsonConvert.SerializeObject(dt), messageHandler, subject, from);
         }
         public List<rowSetting> GetSetting(int indexMessage)
         {
