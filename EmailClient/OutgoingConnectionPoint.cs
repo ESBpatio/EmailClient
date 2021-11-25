@@ -92,22 +92,25 @@ namespace EmailClient
         }
         public void WriteSetting(string uid, byte[] body, string formatFile)
         {
+            var path = patchFile + uid + formatFile;
             DirectoryInfo dirInfo = new DirectoryInfo(patchFile);
             //Создаем каталог для файла
             if (!dirInfo.Exists)
                 dirInfo.Create();
-            using (var fs = new FileStream(patchFile + uid + formatFile, FileMode.Truncate))
-            {
-            }
 
+            if(File.Exists(path))
+            {
+                using (var fs = new FileStream(patchFile + uid + formatFile, FileMode.Truncate))
+                {
+                }
+            }
             using (FileStream fs = new FileStream(patchFile + uid + formatFile, FileMode.OpenOrCreate))
             {
 
                 byte[] array = body;
-                
+
                 fs.Write(array, 0, array.Length);
             }
-
         }
         public string ExcelToJSON(MemoryStream ms)
         {
