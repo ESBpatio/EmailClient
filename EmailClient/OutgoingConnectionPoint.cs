@@ -21,7 +21,7 @@ namespace EmailClient
         private readonly string urlPatch;
         private int timeOut;
         private string patchFile;
-        string replyClassId, formatSetting;
+        string replyClassId, formatSetting, idObject;
         int startToRow = 0, numberList = 0;
         List<rowSetting> rowSettings = null;
 
@@ -61,6 +61,8 @@ namespace EmailClient
                                 Id = Guid.NewGuid(),
                                 Type = "DTP"
                             };
+                            replyMessage.SetPropertyWithValue("idObject", idObject);
+
                             if (!replyHandler.HandleReplyMessage(replyMessage))
                             {
                                 //logger.Error("Ошибка отправки ответного сообщения");
@@ -179,6 +181,7 @@ namespace EmailClient
                 }
                 this.startToRow = int.Parse(setting["СхемаЗагрузки"]["НачальнаяСтрокаВФайле"].ToString()) - 1;
                 this.numberList = int.Parse(setting["СхемаЗагрузки"]["НомерЛистаВФайле"].ToString()) - 1;
+                this.idObject = JsonUtils.StringValue(setting, "СхемаЗагрузки.СсылкаНаСхему");
                 this.rowSettings = GetSettingsToRows(setting);
 
                 if (rowSettings.Count < 0)
