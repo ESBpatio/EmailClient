@@ -90,7 +90,6 @@ namespace EmailClient
                 for (int i = 0; i < inbox.Count; i++)
                 {
                     var propertyMessage = inbox.Fetch(new[] { i }, MessageSummaryItems.Flags);
-                    var s = propertyMessage[0].Flags.Value.HasFlag(MessageFlags.Seen);
                     if (!propertyMessage[0].Flags.Value.HasFlag(MessageFlags.Seen))
                     {
                         GetMessage(i, inbox, email, messageHandler);
@@ -193,7 +192,7 @@ namespace EmailClient
             }catch(Exception ex)
             {
                 string error = string.Format("Ошибка преобразования файла " + ex.Message);
-                email.sendMessage(from, error, uri, 587, login, password, patchToDisk + fileName);
+                email.sendMessage(from, error, uri, 587, login, password);
                 logger.Error(String.Format("Ошибка : {0} Отправитель {1} , тема письма {2}", error, from, subject));
             }
         }
