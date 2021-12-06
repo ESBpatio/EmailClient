@@ -82,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EmailUtils.cs" />
+    <Compile Include="fileUtils.cs" />
     <Compile Include="IngoingConnectionPoint.cs" />
     <Compile Include="IngoingConnectionPointFactory.cs" />
     <Compile Include="JsonUtils.cs" />

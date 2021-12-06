@@ -20,7 +20,7 @@ namespace EmailClient
         private bool debugMode;
         private readonly string urlPatch;
         private int timeOut;
-        private string patchFile;
+        private string pathCatalog;
         string replyClassId, formatSetting, idObject;
         int startToRow = 0, numberList = 0;
         List<rowSetting> rowSettings = null;
@@ -34,7 +34,7 @@ namespace EmailClient
             urlPatch = @"https://drive.google.com/uc?export=download&id=";
             ParseSettings(jsonSettings);
         }
-        public void Run(IMessageSource messageSource, IMessageReplyHandler replyHandler, CancellationToken ct)
+        public async void Run(IMessageSource messageSource, IMessageReplyHandler replyHandler, CancellationToken ct)
         {
             while (!ct.IsCancellationRequested)
             {
@@ -77,7 +77,8 @@ namespace EmailClient
                             string[] arAddreses = address.Split(';');
                             foreach (string arAddress in arAddreses)
                             {
-                                WriteSetting(arAddress, message.Body, formatSetting);
+                                //WriteSetting(arAddress, message.Body, formatSetting);
+                                await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + arAddress + formatSetting),formatSetting);
                             }
                             CompletePeeklock(logger, messageSource, message.Id);
                         }
@@ -90,28 +91,30 @@ namespace EmailClient
                 }
             }
         }
-        public void WriteSetting(string uid, byte[] body, string formatFile)
-        {
-            var path = patchFile + uid + formatFile;
-            DirectoryInfo dirInfo = new DirectoryInfo(patchFile);
-            //Создаем каталог для файла
-            if (!dirInfo.Exists)
-                dirInfo.Create();
+        //public void WriteSetting(string uid, byte[] body, string formatFile)
+        //{
+        //    var path = patchFile + uid + formatFile;
+        //    DirectoryInfo dirInfo = new DirectoryInfo(patchFile);
+        //    FileInfo fileInfo = new FileInfo(path);
+        //    //Создаем каталог для файла
+        //    if (!dirInfo.Exists)
+        //        dirInfo.Create();
+        //    //Удаляем файл перед записью
+        //    if(fileInfo.Exists)
+        //    {
+        //        fileInfo.Delete();
+        //        //using (var fs = new FileStream(patchFile + uid + formatFile, FileMode.Truncate))
+        //        //{
+        //        //}
+        //    }
+        //    using (FileStream fs = new FileStream(patchFile + uid + formatFile, FileMode.OpenOrCreate))
+        //    {
 
-            if(File.Exists(path))
-            {
-                using (var fs = new FileStream(patchFile + uid + formatFile, FileMode.Truncate))
-                {
-                }
-            }
-            using (FileStream fs = new FileStream(patchFile + uid + formatFile, FileMode.OpenOrCreate))
-            {
+        //        byte[] array = body;
 
-                byte[] array = body;
-
-                fs.Write(array, 0, array.Length);
-            }
-        }
+        //        fs.Write(array, 0, array.Length);
+        //    }
+        //}
         public string ExcelToJSON(MemoryStream ms)
         {
             IExcelDataReader dataReader = ExcelReaderFactory.CreateReader(ms);
@@ -174,45 +177,29 @@ namespace EmailClient
         }
         public bool GetSettings(string uid)
         {
-            using (var patchSetting = File.Open((patchFile + uid), FileMode.Open, FileAccess.Read))
+            JObject setting;
+            try
             {
-                var sr = new StreamReader(patchSetting);
-                JObject setting = null;
-                try
-                {
-                    setting = JObject.Parse(sr.ReadToEnd());
-                }
-                catch (Exception ex)
-                {
-                    logger.Error("Ошибка разбора схемы настройки поставщиков " + ex.Message);
-                    return false;
-                }
-                this.startToRow = int.Parse(setting["СхемаЗагрузки"]["НачальнаяСтрокаВФайле"].ToString()) - 1;
-                this.numberList = int.Parse(setting["СхемаЗагрузки"]["НомерЛистаВФайле"].ToString()) - 1;
-                this.idObject = JsonUtils.StringValue(setting, "СхемаЗагрузки.СсылкаНаСхему");
-                this.rowSettings = GetSettingsToRows(setting);
-
-                if (rowSettings.Count < 0)
-                {
-                    logger.Error("Не разобраны строки настроек шаблона");
-                    return false;
-                }
+               setting = JObject.Parse(fileUtils.GetSetting(pathCatalog + uid));
             }
-            return true;
-        }
-        private List<rowSetting> GetSettingsToRows(JObject jObject)
-        {
-            List<rowSetting> rowSettings = new List<rowSetting>();
-            foreach (var item in jObject["СхемаЗагрузки"]["ЗагружаеммыеПоля"])
+            catch (Exception ex)
+            {
+                logger.Error("Ошибка разбора JSON настройки поставщика " + ex.Message);
+                return false;
+            }
+            this.startToRow = JsonUtils.IntValue(setting, "СхемаЗагрузки.НачальнаяСтрокаВФайле");
+            this.numberList = JsonUtils.IntValue(setting, "СхемаЗагрузки.НомерЛистаВФайле");
+            this.idObject = JsonUtils.StringValue(setting, "СхемаЗагрузки.СсылкаНаСхему");
+            foreach (var item in setting["СхемаЗагрузки"]["ЗагружаеммыеПоля"])
             {
                 rowSetting rowSetting = new rowSetting
                 {
                     numberCol = (int)item["НомерКолонкиВФайле"],
                     viewCol = item["ВидКолонки"].ToString()
                 };
-                rowSettings.Add(rowSetting);
+                this.rowSettings.Add(rowSetting);
             }
-            return rowSettings;
+            return true;
         }
         public void CompletePeeklock(ILogger logger, IMessageSource messageSource, Guid Id, MessageHandlingError messageHandlingError, string errorMessage)
         {
@@ -242,7 +229,7 @@ namespace EmailClient
             }
             debugMode = JsonUtils.BoolValue(jObject, "debugMode");
             timeOut = JsonUtils.IntValue(jObject, "timeOut", 10);
-            patchFile = JsonUtils.StringValue(jObject, "patchFile", @"C:\ProgramData\tmp");
+            pathCatalog = JsonUtils.StringValue(jObject, "pathCatalog", @"C:\ProgramData\adapterFile");
             replyClassId = JsonUtils.StringValue(jObject, "replyClassId");
             formatSetting = JsonUtils.StringValue(jObject, "formatSetting", ".JSON");
         }
