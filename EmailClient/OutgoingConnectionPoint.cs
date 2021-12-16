@@ -73,12 +73,17 @@ namespace EmailClient
 
                         else if (message.Type == "STG")
                         {
-                            string address = message.GetPropertyValue<string>("Id");
-                            string[] arAddreses = address.Split(';');
-                            foreach (string arAddress in arAddreses)
+                            //string address = message.GetPropertyValue<string>("ArrayAddress");
+                            //string[] arAddreses = address.Split(';');
+                            string[] arAddres = message.GetPropertyValue<string>("ArrayAddress").Split(';');
+                            string[] arSubject = message.GetPropertyValue<string>("ArraySubject").Split(';');
+                            foreach (string Address in arAddres)
                             {
-                                //WriteSetting(arAddress, message.Body, formatSetting);
-                                await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + arAddress + formatSetting),formatSetting);
+                                await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + Address + formatSetting),formatSetting);
+                            }
+                            foreach (string Subject  in arSubject)
+                            {
+                                await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + Subject + formatSetting), formatSetting);
                             }
                             CompletePeeklock(logger, messageSource, message.Id);
                         }
