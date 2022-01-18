@@ -27,6 +27,7 @@ namespace EmailClient
         public IExcelDataReader reader;
         public EmailUtils email;
         public IMailFolder inbox;
+        const string tmplMessage = "Произошла ошибка при загрузке письма. Ошибка :";
 
         public IngoingConnectionPoint(string jsonSettings, IServiceLocator serviceLocator)
         {
@@ -72,9 +73,10 @@ namespace EmailClient
                 }
                 catch (Exception ex)
                 {
-                    string error = string.Format("Ошибка загрузки письма " + ex.Message + "\n" + ex.StackTrace);
+                    string error = string.Format("<h2> {0} \n Ошибка загрузки письма {1} \n Trace : {2} </h2>" ,tmplMessage, ex.Message , ex.StackTrace);
                     logger.Error(error);
-                    email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                    //email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                    email.sendMessage(responsiblePerson,uri,587,login,password,"info.price@patio-minsk.by","ESB info",error, "Ошибка при загрузке вложения");
                 }
                 ct.WaitHandle.WaitOne(timeout);
             }
@@ -133,8 +135,10 @@ namespace EmailClient
                         Boolean createDisk = email.AddFileToDist(stream, fileName, patchToDisk);
                         if (createDisk)
                         {
-                            string error = string.Format("Файл был пропущен , формат не подходит для обработки.");
-                            email.sendMessage(from, error, uri, 587, login, password, patchToDisk + fileName);
+                            string error = string.Format("<h2> {0} Файл был пропущен , формат не подходит для обработки. </h2>",tmplMessage);
+                            //email.sendMessage(from, error, uri, 587, login, password, patchToDisk + fileName);
+                            //email.sendMessage(from,uri,587,login,password,"info.price@patio-minsk.by","ESB info",error, "Ошибка при загрузке вложения",patchToDisk+fileName);
+                            //email.sendMessageToAttaches(from, uri, 587, login, password, "info.price@patio-minsk.by", "ESB info", error, "Ошибка при загрузке вложения", (patchToDisk + fileName).ToString());
                             logger.Error(String.Format("Ошибка : {0} Отправитель {1} , тема письма {2}", error, from, subject));
                             continue;
                         }
@@ -188,13 +192,16 @@ namespace EmailClient
                     }
                     dt.Rows.Add(newRow);
                 }
+
                 CreateESBMessage(JsonConvert.SerializeObject(dt), messageHandler, subject, from);
             }catch(Exception ex)
             {
-                string error = string.Format("Ошибка преобразования файла " + ex.Message);
+                string error = string.Format("<h2> {0} ошибка преобразования файла , подробное описание : {1} </h2>" ,tmplMessage,ex.Message);
                 //email.sendMessage(from + ";" + responsiblePerson, error, uri, 587, login, password);
-                email.sendMessage(from, error, uri, 587, login, password);
-                email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                //email.sendMessage(from, error, uri, 587, login, password);
+                //email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                email.sendMessage(from,uri,587,login,password,"info.price@patio-minsk.by","ESB info",error, "Ошибка при загрузке вложения");
+                email.sendMessage(responsiblePerson,uri,587,login,password,"info.price@patio-minsk.by","ESB info",error, "Ошибка при загрузке вложения");
                 logger.Error(String.Format("Ошибка : {0} Отправитель {1} , тема письма {2}", error, from, subject));
             }
         }
@@ -207,8 +214,9 @@ namespace EmailClient
             }
             catch (Exception ex)
             {
-                string error = String.Format(("Невозможно открыть настройки для отправителя {0} , тема письма {1}. \n Описание ошибка : {2} \n Trace : {3}"), from, subject, ex.Message, ex.StackTrace);
-                email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                string error = String.Format(("<h2> Невозможно открыть настройки для отправителя {0} , тема письма {1}. \n Описание ошибка : {2} \n Trace : {3} </h2>"), from, subject, ex.Message, ex.StackTrace);
+                //email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                email.sendMessage(responsiblePerson,uri,587,login,password,"info.price@patio-minsk.by","ESB info",error, "Ошибка при загрузке вложения");
                 throw new Exception(error);
             }
             StreamReader sr = new StreamReader(openSettings);
@@ -224,8 +232,9 @@ namespace EmailClient
                 //  sr.Close();
                 //continue;
                 inbox.AddFlags(indexMessage, MessageFlags.Seen, true);
-                string error = string.Format("Настройки не найдены для отправителя {0} , тема письма : {1}", from, subject);
-                email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                string error = string.Format("<h2> Настройки не найдены для отправителя {0} , тема письма : {1} </h2>", from, subject);
+                //email.sendMessage(responsiblePerson, error, uri, 587, login, password);
+                email.sendMessage(responsiblePerson,uri,587,login,password,"info.price@patio-minsk.by","ESB info",error, "Ошибка при загрузке вложения");
                 throw new Exception(error);
             }
             //sr.Close();

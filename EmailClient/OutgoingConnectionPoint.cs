@@ -51,7 +51,44 @@ namespace EmailClient
                 {
                     try
                     {
-                        if (message.Type == "GDRV")
+                        switch (message.Type)
+	                        {
+                                case "GDRV" : 
+                                    byte[] body = Encoding.UTF8.GetBytes(ExcelToJSON(DowloadDocument(message, messageSource, logger)));
+                                    Message replyMessage = new Message()
+                                    {
+                                        Body = body,
+                                        ClassId = replyClassId,
+                                        Id = Guid.NewGuid(),
+                                        Type = "DTP"
+                                    };
+                                    replyMessage.SetPropertyWithValue("idObject", idObject);
+
+                                    if (!replyHandler.HandleReplyMessage(replyMessage))
+                                    {
+                                        CompletePeeklock(logger, messageSource, message.Id, MessageHandlingError.UnknowError, "Ошибка отправки ответного сообщения");
+                                    }
+                                    CompletePeeklock(logger, messageSource, message.Id);
+                                    break;
+                                case "STG" :
+                                    string[] arAddres = message.GetPropertyValue<string>("ArrayAddress").Split(';');
+                                    string[] arSubject = message.GetPropertyValue<string>("ArraySubject").Split(';');
+                                    foreach (string Address in arAddres)
+                                    {
+                                        await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + Address + formatSetting),formatSetting);
+                                    }
+                                    foreach (string Subject  in arSubject)
+                                    {
+                                        await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + Subject + formatSetting), formatSetting);
+                                    }
+                                    CompletePeeklock(logger, messageSource, message.Id);
+                                    break;
+                                //case "LTR" :
+
+		                        default:
+                                break;
+	                        }
+                       /* if (message.Type == "GDRV")
                         {
                             byte[] body = Encoding.UTF8.GetBytes(ExcelToJSON(DowloadDocument(message, messageSource, logger)));
                             Message replyMessage = new Message()
@@ -69,24 +106,22 @@ namespace EmailClient
                                 CompletePeeklock(logger, messageSource, message.Id, MessageHandlingError.UnknowError, "Ошибка отправки ответного сообщения");
                             }
                             CompletePeeklock(logger, messageSource, message.Id);
-                        }
+                        }*/
 
-                        else if (message.Type == "STG")
-                        {
-                            //string address = message.GetPropertyValue<string>("ArrayAddress");
-                            //string[] arAddreses = address.Split(';');
-                            string[] arAddres = message.GetPropertyValue<string>("ArrayAddress").Split(';');
-                            string[] arSubject = message.GetPropertyValue<string>("ArraySubject").Split(';');
-                            foreach (string Address in arAddres)
-                            {
-                                await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + Address + formatSetting),formatSetting);
-                            }
-                            foreach (string Subject  in arSubject)
-                            {
-                                await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + Subject + formatSetting), formatSetting);
-                            }
-                            CompletePeeklock(logger, messageSource, message.Id);
-                        }
+                        //else if (message.Type == "STG")
+                        //{
+                        //    string[] arAddres = message.GetPropertyValue<string>("ArrayAddress").Split(';');
+                        //    string[] arSubject = message.GetPropertyValue<string>("ArraySubject").Split(';');
+                        //    foreach (string Address in arAddres)
+                        //    {
+                        //        await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + Address + formatSetting),formatSetting);
+                        //    }
+                        //    foreach (string Subject  in arSubject)
+                        //    {
+                        //        await fileUtils.WriteSetting(message.Body, pathCatalog, (pathCatalog + Subject + formatSetting), formatSetting);
+                        //    }
+                        //    CompletePeeklock(logger, messageSource, message.Id);
+                        //}
                     }
                     catch (Exception ex)
                     {
