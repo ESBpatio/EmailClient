@@ -56,7 +56,10 @@ namespace EmailClient
                         MimeMessage message = client.Inbox.GetMessage(id);
                         this.From = message.From.OfType<MailboxAddress>().Single().Address;
                         this.Subject = message.Subject;
-                        List<rowSetting> rowSettings = GetSetting();
+                        string patch = PatchSetting + From + FormatSetting;
+                        if (CheckSettingToSubject())
+                            patch = PatchSetting + Subject + @"\" + From + FormatSetting;
+                        List<rowSetting> rowSettings = GetSetting(patch);
                         foreach (var attachment in message.Attachments)
                         {
                             this.FileName = attachment.ContentDisposition.FileName;
@@ -78,15 +81,18 @@ namespace EmailClient
                                     message1.Content.DecodeTo(stream);
                                 }
                                 DataTable body = ExcelToJson(stream, rowSettings);
-                                if(body == null)
+                                if (body == null)
                                 {
-                                    string error = string.Format("<p>Ошибка преобразования файла , имя файла {0}</p>",this.FileName);
+                                    string error = string.Format("<p>Ошибка преобразования файла , имя файла {0}</p>", this.FileName);
                                     this.email.sendMessage(From, Uri, 587, Login, Password, "info.price@patio-minsk.by", "ESB Info", error, "Ошибка при загрузке вложения");
                                     this.email.sendMessage(ResponsiblePerson, Uri, 587, Login, Password, "info.price@patio-minsk.by", "ESB Info", error, "Ошибка при загрузке вложения");
                                     logger.Error(string.Format("Ошибка : {0} отправитель {1} , тема письма {2}", error, From, Subject));
                                     continue;
                                 }
-                                messageHandler.HandleMessage(CreateESBMessage(JsonConvert.SerializeObject(body)));
+                                else
+                                {
+                                    messageHandler.HandleMessage(CreateESBMessage(JsonConvert.SerializeObject(body)));
+                                }
                             }
                         }
                         client.Inbox.AddFlags(id, MessageFlags.Seen, true);
@@ -195,15 +201,15 @@ namespace EmailClient
                 return null;
             }
         }
-        public List<rowSetting> GetSetting()
+        public List<rowSetting> GetSetting(string patch)
         {
             try
             {
-                string patch;
-                if (CheckSettingToSubject())
-                    patch = PatchSetting + Subject + FormatSetting;
-                else
-                    patch = PatchSetting + From + FormatSetting;
+                //string patch;
+                //if (CheckSettingToSubject())
+                //    patch = PatchSetting + Subject + FormatSetting;
+                //else
+                //    patch = PatchSetting + From + FormatSetting;
                 using (FileStream stream = File.Open(patch, FileMode.Open, FileAccess.Read))
                 {
                     StreamReader sr = new StreamReader(stream);
@@ -233,7 +239,7 @@ namespace EmailClient
 
         public bool CheckSettingToSubject()
         {
-            if (File.Exists(PatchSetting + Subject + FormatSetting))
+            if (File.Exists(PatchSetting + Subject + @"\"+ From + FormatSetting))
                 return true;
             return false;
         }

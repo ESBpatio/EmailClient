@@ -14,8 +14,13 @@ namespace EmailClient
             //Создания каталога для файлов
             DirectoryInfo directoryInfo = new DirectoryInfo(pathCatalog);
             FileInfo fileInfo = new FileInfo(pathFile);
-            if(!directoryInfo.Exists)
+            if (!directoryInfo.Exists)
                 directoryInfo.Create();
+            else
+            {
+                directoryInfo.Create();
+            }
+                
             if(fileInfo.Exists)
                 fileInfo.Delete();
             using (FileStream fstream = new FileStream($"{pathFile}",FileMode.OpenOrCreate))
