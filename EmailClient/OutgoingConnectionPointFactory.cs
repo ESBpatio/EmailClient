@@ -8,9 +8,11 @@ namespace EmailClient
     {
         public IOutgoingConnectionPoint Create(Dictionary<string, string> parameters, IServiceLocator serviceLocator)
         {
-            return (IOutgoingConnectionPoint)new OutgoingConnectionPoint(
-                parameters.GetStringParameter("Настройки в формате JSON"), serviceLocator
-          );
+            //return (IOutgoingConnectionPoint)new OutgoingConnectionPoint(
+            //    parameters.GetStringParameter("Настройки в формате JSON"), serviceLocator
+            return (IOutgoingConnectionPoint)new OutgoingConnectionPointEmail(
+    parameters.GetStringParameter("Настройки в формате JSON"), serviceLocator
+            );
         }
     }
 }
