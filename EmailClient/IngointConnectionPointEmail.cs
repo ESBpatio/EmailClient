@@ -83,7 +83,7 @@ namespace EmailClient
                                 DataTable body = ExcelToJson(stream, rowSettings);
                                 if (body == null)
                                 {
-                                    string error = string.Format("<p>Ошибка преобразования файла , имя файла {0}</p>", this.FileName);
+                                    string error = string.Format("<p>Ошибка преобразования файла. \n  Имя файла {0} \n Отправитель {1}</p>", FileName, From);
                                     this.email.sendMessage(From, Uri, 587, Login, Password, "info.price@patio-minsk.by", "ESB Info", error, "Ошибка при загрузке вложения");
                                     this.email.sendMessage(ResponsiblePerson, Uri, 587, Login, Password, "info.price@patio-minsk.by", "ESB Info", error, "Ошибка при загрузке вложения");
                                     logger.Error(string.Format("Ошибка : {0} отправитель {1} , тема письма {2}", error, From, Subject));
@@ -144,7 +144,7 @@ namespace EmailClient
      
         private bool CheckFormat(MimeEntity attachment)
         {
-            switch (Regex.Match(attachment.ContentType.Name, "[^.]+$").Value)
+            switch (Regex.Match(attachment.ContentType.Name, "[^.]+$").Value.ToLower())
             {
                 case "xlsx":
                     break;
