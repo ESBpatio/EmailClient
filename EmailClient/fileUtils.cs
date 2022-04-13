@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,10 +17,10 @@ namespace EmailClient
             FileInfo fileInfo = new FileInfo(pathFile);
             if (!directoryInfo.Exists)
                 directoryInfo.Create();
-            else
-            {
-                directoryInfo.Create();
-            }
+            //else
+            //{
+            //    directoryInfo.Create();
+            //}
                 
             if(fileInfo.Exists)
                 fileInfo.Delete();
@@ -34,6 +35,38 @@ namespace EmailClient
             {
                 return sr.ReadToEnd();
             }
+        }
+        public static DirectoryInfo CreateCatalog(string pathCatalog)
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(pathCatalog);
+            if (!directoryInfo.Exists)
+                directoryInfo.Create();
+            return directoryInfo;
+        }
+        public static FileInfo DowloadFileFromURLToPath(string url , string path)
+        {
+            try
+            {
+                using (WebClient webClient = new WebClient())
+                {
+                    webClient.DownloadFile(url, path);
+                    return new FileInfo(path);
+                }
+            }
+            catch (Exception)
+            {
+
+                return null;
+            }
+        }
+        public static MemoryStream GetFileStream(string path)
+        {
+            MemoryStream ms = new MemoryStream();
+            FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read);
+            byte[] bytes = new byte[file.Length];
+            file.Read(bytes, 0, (int)file.Length);
+            ms.Write(bytes, 0, (int)file.Length);
+            return ms;
         }
     }
 }

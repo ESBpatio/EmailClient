@@ -144,7 +144,7 @@ namespace EmailClient
      
         private bool CheckFormat(MimeEntity attachment)
         {
-            switch (Regex.Match(attachment.ContentType.Name, "[^.]+$").Value.ToLower())
+            switch (Regex.Match(attachment.ContentDisposition?.FileName, "[^.]+$").Value.ToLower())
             {
                 case "xlsx":
                     break;
@@ -205,11 +205,6 @@ namespace EmailClient
         {
             try
             {
-                //string patch;
-                //if (CheckSettingToSubject())
-                //    patch = PatchSetting + Subject + FormatSetting;
-                //else
-                //    patch = PatchSetting + From + FormatSetting;
                 using (FileStream stream = File.Open(patch, FileMode.Open, FileAccess.Read))
                 {
                     StreamReader sr = new StreamReader(stream);
