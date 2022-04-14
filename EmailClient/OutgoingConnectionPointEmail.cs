@@ -12,6 +12,7 @@ using ESB_ConnectionPoints.Utils;
 using ExcelDataReader;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Web;
 
 namespace EmailClient
 {
@@ -114,7 +115,16 @@ namespace EmailClient
                                     }
                                     DirectoryInfo catalog =  fileUtils.CreateCatalog($"{settingCatalog}dowloadGoogleFile");
                                     logger.Debug($"Получен каталог на сервере {catalog.FullName}");
-                                    var pathFile = fileUtils.DowloadFileFromURLToPath(GetGoogleTableDownloadLinkFromUrl(this.url), catalog + @"\" + idObject + ".xlsx");
+                                    string url = GetGoogleTableDownloadLinkFromUrl(this.url);
+                                    FileInfo pathFile;
+                                    if (string.IsNullOrEmpty(url))
+                                    {
+                                        pathFile = fileUtils.DowloadFileFromURLToPath(this.url, catalog + @"\" + idObject + ".xlsx");
+                                    }
+                                    else
+                                    {
+                                        pathFile = fileUtils.DowloadFileFromURLToPath(url, catalog + @"\" + idObject + ".xlsx");
+                                    }
                                     if (pathFile == null)
                                     {
                                         CompletePeeklock(logger, messageSource, message.Id, MessageHandlingError.UnknowError, "Не удалось сохранить файл в каталог");
